@@ -1,0 +1,110 @@
+esphome:
+  name: esp32-unical
+  friendly_name: Unical
+  min_version: 2024.11.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  baud_rate: 0
+
+# Enable Home Assistant API
+api:
+
+# Allow Over-The-Air updates
+ota:
+- platform: esphome
+
+wifi:
+  ssid: !secret wifi_secret_ssid
+  password: !secret wifi_secret_password
+
+  ap:
+    ssid: "ESPHOME Unical Hotspot"
+    password: !secret wifi_secret_fallback_password
+
+external_components:
+  - source: 
+      type: git
+      url: https://github.com/exciton/esphome
+      ref: dev
+    components: [midea_xye]
+  
+# UART settings for RS485 covnerter dongle (required)
+uart:
+  tx_pin: TX
+  rx_pin: RX
+  baud_rate: 4800
+  debug: #If you want to help reverse engineer
+    direction: BOTH
+
+
+# Main settings
+climate:
+  - platform: midea_xye
+    name: Unical
+    period: 1s                  # Optional. Defaults to 1s
+    timeout: 100ms              # Optional. Defaults to 100ms
+    beeper: true               # Optional. Beep on commands.
+    visual:                     # Optional. Example of visual settings override.
+      min_temperature: 17 °C    # min: 17
+      max_temperature: 30 °C    # max: 30
+      temperature_step: 1.0 °C  # min: 0.5
+    supported_modes:            # Optional. 
+      - FAN_ONLY
+      - HEAT_COOL              
+      - COOL
+      - HEAT
+      - DRY
+    supported_presets:          # Optional. 
+      - BOOST
+      - SLEEP
+    outdoor_temperature:        # Optional. Outdoor temperature sensor
+      name: Outside Temp
+    temperature_2a:             # Optional. Inside coil temperature
+      name: Inside Coil Temp
+    temperature_2b:             # Optional. Outside coil temperature
+      name: Outside Coil Temp
+    #current:                    # Optional. Current measurement
+    #  name: Current
+    timer_start:                # Optional. On timer duration
+      name: Timer Start
+    timer_stop:                 # Optional. Off timer duration
+      name: Timer Stop
+    error_flags:                # Optional.
+      name: Error Flags
+    protect_flags:              # Optional. 
+      name: Protect Flags
+
+sensor:
+    # Uptime dell'ESP
+  - platform: uptime
+    name: "Tempo di Uptime (s)"
+    id: esp_uptime
+
+  # Segnale WiFi in dB
+  - platform: wifi_signal
+    name: "Segnale WiFi (dB)"
+    id: wifi_segnale
+    update_interval: 60s
+
+text_sensor:
+  # BSSID del WiFi
+  - platform: wifi_info
+    ip_address:
+      name: "Indirizzo IP ESP"
+    ssid:
+      name: "Nome WiFi (SSID)"
+    bssid:
+      name: "BSSID WiFi"
+
+  # Versione ESPHome
+  - platform: version
+    name: "Versione ESPHome"
+switch:
+  - platform: restart
+    name: "Riavvia ESP"

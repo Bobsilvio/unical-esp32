@@ -1,0 +1,115 @@
+esphome:
+  name: esphome-web-ba1264
+  friendly_name: Condizionatore Unical
+  min_version: 2024.11.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+# Allow Over-The-Air updates
+ota:
+- platform: esphome
+
+wifi:
+  ssid: !secret wifi_secret_ssid
+  password: !secret wifi_secret_password
+
+  ap:
+    ssid: "Hotspot Condizionatore"
+    password: !secret wifi_secret_fallback_password
+
+sensor:
+  - platform: homeassistant
+    name: "Temperatura Condizionatore"
+    id: current_temperature
+    entity_id: climate.casa_radiante_2
+    attribute: current_temperature
+
+ # - platform: homeassistant
+ #   name: "Umidità Condizionatore"
+ #   id: current_humidity
+ #   entity_id: humidity_sensor
+ #   attribute: current_humidity
+
+  # Uptime dell'ESP
+  - platform: uptime
+    name: "Tempo di Uptime (s)"
+    id: esp_uptime
+
+  # Segnale WiFi in dB
+  - platform: wifi_signal
+    name: "Segnale WiFi (dB)"
+    id: wifi_segnale
+    update_interval: 60s
+
+  # Segnale WiFi in Percentuale
+  - platform: template
+    name: "Segnale WiFi (%)"
+    lambda: |-
+      if (id(wifi_segnale).state < -100) {
+        return 0;
+      } else if (id(wifi_segnale).state > -50) {
+        return 100;
+      } else {
+        return (id(wifi_segnale).state + 100) * 2;
+      }
+    unit_of_measurement: "%"
+    update_interval: 60s
+
+text_sensor:
+  # BSSID del WiFi
+  - platform: wifi_info
+    ip_address:
+      name: "Indirizzo IP ESP"
+    ssid:
+      name: "Nome WiFi (SSID)"
+    bssid:
+      name: "BSSID WiFi"
+
+  # Versione ESPHome
+  - platform: version
+    name: "Versione ESPHome"
+
+switch:
+  # Pulsante per riavviare il WiFi
+  - platform: restart
+    name: "Restart WiFi"
+    id: restart_wifi
+
+remote_transmitter:
+  id: ir_trasmitter
+  pin: GPIO13
+  carrier_duty_percent: 50% #100% con connessione via cavo
+  
+remote_receiver:
+  id: ir_receiver
+  pin:
+    number: GPIO32
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+  # high 55% tolerance is recommended for some remote control units
+  tolerance: 55%
+  dump: coolix
+
+climate:
+  - platform: midea_ir
+    name: "Condizionatore UniCal"
+    transmitter_id: ir_trasmitter
+    receiver_id: ir_receiver
+    sensor: current_temperature
+    
+
+button:
+  - platform: safe_mode
+    name: "Condizionatore Unical(Safe Mode)"
